@@ -3,11 +3,6 @@ buildscript {
     ext.kotlinVersion = '1.3.61'
 
     repositories {
-        // Chinese mirrors for quicker loading for chinese devs - uncomment if you're chinese
-//        maven{ url 'https://maven.aliyun.com/repository/jcenter'}
-//        maven{ url 'https://maven.aliyun.com/repository/google'}
-//        maven{ url 'https://maven.aliyun.com/repository/gradle-plugin'}
-//        maven{ url 'https://maven.aliyun.com/repository/public'}
         google()
         mavenLocal()
         mavenCentral()
@@ -44,18 +39,12 @@ allprojects {
     }
 
     repositories {
-        // Chinese mirrors for quicker loading for chinese devs - uncomment if you're chinese
-        // maven{ url 'https://maven.aliyun.com/repository/jcenter'}
-        // maven{ url 'https://maven.aliyun.com/repository/google'}
-        // maven{ url 'https://maven.aliyun.com/repository/gradle-plugin'}
-        // maven{ url 'https://maven.aliyun.com/repository/public'}
         google()
         jcenter()
         mavenLocal()
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
-        maven{ url 'https://jitpack.io' } // for java-discord-rpc
     }
 }
 
@@ -69,9 +58,8 @@ project(":desktop") {
         implementation "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
 
         implementation "com.badlogicgames.gdx:gdx-tools:$gdxVersion"  // This is for the TexturePacker class
-        implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion" // This iss so the JAR works with Kotlin
-
-        implementation 'com.github.MinnDevelopment:java-discord-rpc:v2.0.1'
+        implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion" // This is so the JAR works with Kotlin
+        implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
 
     }
 
@@ -98,6 +86,16 @@ project(":android") {
         natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-arm64-v8a"
         natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86"
         natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64"
+
+
+
+        // Freetype
+        implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi-v7a"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-arm64-v8a"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86_64"
     }
 }
 
@@ -124,6 +122,8 @@ project(":core") {
         implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
         implementation "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
         implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+        implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion" // This is for freetype
+
     }
 
 

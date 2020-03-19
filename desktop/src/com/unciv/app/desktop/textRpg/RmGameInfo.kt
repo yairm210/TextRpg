@@ -7,6 +7,7 @@ class RmGameInfo{
     var day = 1
     fun passDay(){
         day++
+        displayText("-----------")
         displayText("Day $day")
         displayText("You are ${unit.hunger}")
     }

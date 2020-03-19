@@ -1,18 +1,19 @@
 package com.unciv.ui.utils
 
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.Input
 import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.Batch
+import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.scenes.scene2d.*
 import com.badlogic.gdx.scenes.scene2d.ui.*
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.utils.viewport.ExtendViewport
 import com.unciv.UncivGame
-import kotlin.concurrent.thread
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
 
 open class RmBaseScreen:Screen {
     var stage: Stage
@@ -43,6 +44,21 @@ open class RmBaseScreen:Screen {
     companion object {
         var skin = Skin(Gdx.files.internal("skin/flat-earth-ui.json"))
         internal var batch: Batch = SpriteBatch()
+
+        init{
+            resetFonts()
+        }
+
+        fun resetFonts(){
+            skin.get<TextButton.TextButtonStyle>(TextButton.TextButtonStyle::class.java).font = Fonts().getFont(20)
+            skin.get<Label.LabelStyle>(Label.LabelStyle::class.java).apply {
+                font = Fonts().getFont(18)
+                fontColor= Color.WHITE
+            }
+            skin.get<TextField.TextFieldStyle>(TextField.TextFieldStyle::class.java).font = Fonts().getFont(18)
+            skin.get<SelectBox.SelectBoxStyle>(SelectBox.SelectBoxStyle::class.java).font = Fonts().getFont(20)
+            skin.get<SelectBox.SelectBoxStyle>(SelectBox.SelectBoxStyle::class.java).listStyle.font = Fonts().getFont(20)
+        }
     }
 }
 
@@ -94,21 +110,6 @@ open class CameraStageBaseScreen : Screen {
 //            skin.get(CheckBox.CheckBoxStyle::class.java).fontColor= Color.WHITE
         }
         internal var batch: Batch = SpriteBatch()
-    }
-
-    /** It returns the assigned [InputListener] */
-    fun onBackButtonClicked(action:()->Unit): InputListener {
-        val listener = object : InputListener(){
-            override fun keyDown(event: InputEvent?, keycode: Int): Boolean {
-                if(keycode == Input.Keys.BACK){
-                    action()
-                    return true
-                }
-                return false
-            }
-        }
-        stage.addListener( listener )
-        return listener
     }
 
 }
@@ -230,9 +231,44 @@ fun String.toLabel(fontColor:Color= Color.WHITE, fontSize:Int=18): Label {
 
 fun Label.setFontColor(color:Color): Label {style=Label.LabelStyle(style).apply { fontColor=color }; return this}
 
-fun Label.setFontSize(size:Int,language:String?=null): Label {
+fun Label.setFontSize(size: Int): Label {
     style = Label.LabelStyle(style)
+    style.font = Fonts().getFont(size)
 //    style.font = if(language==null) Fonts().getFont(45) else Fonts().getFont(45,language)
     style = style // because we need it to call the SetStyle function. Yuk, I know.
-    return this.apply { setFontScale(size/45f) } // for chaining
+    return this//.apply { setFontScale(size/45f) } // for chaining
+}
+
+
+class Fonts(){
+
+    companion object {
+        // Contains e.g. "Arial 22", fontname and size, to BitmapFont
+        val fontCache = HashMap<Int, BitmapFont>()
+
+        const val defaultText = "ABCČĆDĐEFGHIJKLMNOPQRSŠTUVWXYZŽaäàâăbcčćçdđeéfghiîjklmnoöpqrsșštțuüvwxyzž" +
+                "АБВГҐДЂЕЁЄЖЗЅИІЇЙЈКЛЉМНЊОПРСТЋУЎФХЦЧЏШЩЪЫЬЭЮЯабвгґдђеёєжзѕиіїйјклљмнњопрстћуўфхцчџшщъыьэюя" +
+                "ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩαβγδεζηθικλμνξοπρστυφχψωάßΆέΈέΉίϊΐΊόΌύΰϋΎΫΏÄĂÂÊÉÎÔÖƠƯÜäăâêôöơưüáéèíóú1234567890" +
+                "‘?’'“!”(%)[#]{@}/&\\<-+÷×=>®©\$€£¥¢:;,.*|"
+    }
+
+    fun getFont(size: Int): BitmapFont {
+        if (fontCache.containsKey(size)) return fontCache[size]!!
+
+        val generator: FreeTypeFontGenerator
+
+        generator = FreeTypeFontGenerator(Gdx.files.internal("skin/Arial.ttf"))
+
+        val parameter = FreeTypeFontGenerator.FreeTypeFontParameter()
+        parameter.size = size*2
+        parameter.minFilter = Texture.TextureFilter.Linear
+        parameter.magFilter = Texture.TextureFilter.Linear
+
+        parameter.characters = defaultText
+
+        val font = generator.generateFont(parameter)
+        generator.dispose() // don't forget to dispose to avoid memory leaks!
+        fontCache[size] = font
+        return font
+    }
 }

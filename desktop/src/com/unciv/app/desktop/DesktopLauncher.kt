@@ -21,14 +21,7 @@ fun displayText(string:String){
 
 class RmGame(): Game() {
     override fun create() {
-
         screen = RmScreen()
-        Label("",RmBaseScreen.skin).setFontSize(25,"")
-        thread {
-            sleep(1000)
-            Gdx.app.postRunnable { screen=RmScreen() }
-        }
-
     }
 
     companion object{
