@@ -9,10 +9,6 @@ abstract class State {
     abstract fun nextState(rmGameInfo: RmGameInfo): State
 
     fun chooseAndActivateAction(actions:List<Action>, addExitAction:Boolean=false){
-//        if(actions.size==1){
-//            actions.first().action()
-//            return
-//        }
         var allActions = actions
         if(addExitAction) allActions = allActions + Action("Exit"){}
         val chosenAction = chooseAction(allActions.map { it.name })

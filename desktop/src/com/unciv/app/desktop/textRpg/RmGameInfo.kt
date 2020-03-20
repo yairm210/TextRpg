@@ -10,6 +10,10 @@ class RmGameInfo{
         displayText("-----------")
         displayText("Day $day")
         displayText("You are ${unit.hunger}")
+        if (unit.health < unit.maxHealth) {
+            displayText("You are injured. Health: " + unit.health)
+        }
+        if(unit.energy<100) displayText("You are tired. Energy: " + unit.energy)
     }
 
     init {

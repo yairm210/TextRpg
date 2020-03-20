@@ -9,19 +9,60 @@ import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.tools.texturepacker.TexturePacker
 import com.unciv.UncivGame
+import com.unciv.app.desktop.textRpg.Action
+import com.unciv.app.desktop.textRpg.AsyncAction
+import com.unciv.app.desktop.textRpg.RmBaseStateAsync
+import com.unciv.app.desktop.textRpg.RmGameInfo
 import com.unciv.ui.utils.RmBaseScreen
 import com.unciv.ui.utils.setFontSize
 import java.io.File
 import java.lang.Thread.sleep
 import kotlin.concurrent.thread
+import kotlin.system.exitProcess
 
 fun displayText(string:String){
     RmGame.displayText(string)
 }
 
+
 class RmGame(): Game() {
+
+    fun chooseAction(actions: List<String>): Int {
+        for ((i, action) in actions.withIndex()) {
+            val placement = i+1
+            com.unciv.app.desktop.displayText("$placement - $action")
+        }
+        while (true) {
+            val read = readLine()
+            if (read == null) continue
+            try {
+                val chosenIndex = read.toInt() -1
+                if (chosenIndex !in actions.indices) throw Exception()
+                return chosenIndex
+            } catch (ex: Exception) {
+                com.unciv.app.desktop.displayText("Not a valid choice!")
+            }
+        }
+    }
+
+    fun chooseAndActivateAction(actions:List<AsyncAction>): List<AsyncAction> {
+        val chosenActionIndex = chooseAction(actions.map { it.name })
+        val chosenAction = actions[chosenActionIndex]
+        return chosenAction.action()
+    }
+
+    fun runTextBasedGame(){
+        val gameInfo = RmGameInfo()
+        var choices = RmBaseStateAsync(gameInfo).choices()
+        while(choices.any()) choices = chooseAndActivateAction(choices)
+    }
+
     override fun create() {
-        screen = RmScreen()
+        if(true){
+            runTextBasedGame()
+            exitProcess(0)
+        }
+        else screen = RmScreen()
     }
 
     companion object{

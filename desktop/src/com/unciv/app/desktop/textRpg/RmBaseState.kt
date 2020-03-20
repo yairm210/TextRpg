@@ -2,18 +2,18 @@ package com.unciv.app.desktop.textRpg
 
 import com.unciv.app.desktop.displayText
 
-class RmBaseStateAsync(val rmGameInfo: RmGameInfo){
+class RmBaseStateAsync(val rmGameInfo: RmGameInfo) {
     val unit = rmGameInfo.unit
-    fun choices():List<AsyncAction> = listOf(restAction(), trainAction())
+    fun choices(): List<AsyncAction> = listOf(restAction, trainAction, itemAction)
 
-    fun restAction() = AsyncAction("Rest (next day)") {
-        if(unit.hunger==Hunger.Starving){
+    val restAction = AsyncAction("Rest (next day)") {
+        if (unit.hunger == Hunger.Starving) {
             displayText("Your fellow goblins take pity on you and give you something to eat.")
             displayText("You're still starving, but at least you won't die quite yet.")
             unit.decreaseHunger()
         }
-        val healthGained = when(unit.hunger){
-            Hunger.Bloated,Hunger.Full,Hunger.Sated -> 50
+        val healthGained = when (unit.hunger) {
+            Hunger.Bloated, Hunger.Full, Hunger.Sated -> 50
             Hunger.Hungry -> 30
             Hunger.Starving -> 10
         }
@@ -25,7 +25,7 @@ class RmBaseStateAsync(val rmGameInfo: RmGameInfo){
         choices()
     }
 
-    fun trainAction() = AsyncAction("Train") {
+    val trainAction = AsyncAction("Train") {
         val trainActions = unit.abilities
                 .filter { unit.canUse(it) }
                 .map {
@@ -33,104 +33,54 @@ class RmBaseStateAsync(val rmGameInfo: RmGameInfo){
                         it.experience += unit.energy
                         unit.energy = 0
                         displayText("You train until you're out of energy")
-                        restAction().action()
+                        restAction.action()
                     }
                 }
         trainActions + AsyncAction("Quit") { choices() }
     }
-}
 
-class RmBaseState: State() {
-
-
-    override fun nextState(gameInfo: RmGameInfo): State {
-        var nextState: State = this
-        val unit = gameInfo.unit
-
-        if (unit.health < unit.maxHealth) {
-            displayText("You are injured. Health: " + unit.health)
-        }
-        if(unit.energy<100) displayText("You are tired. Energy: " + unit.energy)
-        val huntAction = Action("Hunt") {
-            val enemy = listOf(MonsterGenerator.getHornRabbit(), MonsterGenerator.getWolf()).random()
-            displayText("You encounter a ${enemy.name}!")
-            nextState = RmBattleState(unit, enemy)
-        }
-
-        val restAction = Action("Rest (next day)") {
-            if(unit.hunger==Hunger.Starving){
-                displayText("Your fellow goblins take pity on you and give you something to eat.")
-                displayText("You're still starving, but at least you won't die quite yet.")
-                unit.decreaseHunger()
-            }
-            val healthGained = when(unit.hunger){
-                Hunger.Bloated,Hunger.Full,Hunger.Sated -> 50
-                Hunger.Hungry -> 30
-                Hunger.Starving -> 10
-            }
-            unit.healBy(healthGained)
-            unit.energy = 100
-            displayText("You rest and recover some health (health: ${unit.health})")
-            unit.increaseHunger()
-            gameInfo.passDay()
-        }
-
-        val trainAction = Action("Train") {
-            val trainActions = unit.abilities
-                    .filter { unit.canUse(it) }
-                    .map {
-                        Action(it.name+" (Expertise: ${it.getAbilityLevel()})") {
-                            it.experience += unit.energy
-                            unit.energy = 0
-                            displayText("You train until you're out of energy")
-                            restAction.action()
-                        }
-                    }
-            chooseAndActivateAction(trainActions,true)
-        }
-
-        val talkAction = Action("Talk"){
-            nextState=TalkState()
-        }
-
-        val itemAction = Action("Items") {
-            nextState=ItemState()
-        }.takeIf { unit.items.any() }
-
-        chooseAndActivateAction(listOfNotNull(huntAction, restAction, trainAction, itemAction, talkAction))
-        return nextState
-    }
-}
-
-class ItemState():State(){
-    override fun nextState(rmGameInfo: RmGameInfo): State {
+    val itemAction = AsyncAction("Items") {
         val unit = rmGameInfo.unit
-        val itemActions = unit.items.groupBy { it }.values.sortedByDescending { it.first().isEquipped }.map {
-            val firstItem = it.first()
-            var title = firstItem.name
-            if(it.size>1) title += " x"+it.size
-            if (firstItem.isEquipped) title += " (equipped)"
-            title += " (${firstItem.parameters.joinToString()})"
-            Action(title) {
-                val actions = arrayListOf<Action>()
-                if (firstItem.isEquipped) actions += Action("Unequip") { firstItem.isEquipped = false }
-                if (!firstItem.isEquipped && unit.canEquip(firstItem)) actions += Action("Equip") {
-                    val equipSlot = firstItem.equipSlot()
-                    for (item in unit.items.filter { it.equipSlot() == equipSlot })
-                        item.isEquipped = false
-                    firstItem.isEquipped = true
+        unit.items.groupBy { it }.values
+                .sortedByDescending { it.first().isEquipped }.map {
+                    val firstItem = it.first()
+                    var title = firstItem.name
+                    if (it.size > 1) title += " x" + it.size
+                    if (firstItem.isEquipped) title += " (equipped)"
+                    title += " (${firstItem.parameters.joinToString()})"
+                    AsyncAction(title) {
+                        val actions = arrayListOf<AsyncAction>()
+                        if (firstItem.isEquipped) actions += AsyncAction("Unequip") { firstItem.isEquipped = false; choices() }
+                        if (!firstItem.isEquipped && unit.canEquip(firstItem)) actions += AsyncAction("Equip") {
+                            val equipSlot = firstItem.equipSlot()
+                            for (item in unit.items.filter { it.equipSlot() == equipSlot })
+                                item.isEquipped = false
+                            firstItem.isEquipped = true
+                            choices()
+                        }
+                        if ("Food" in firstItem.parameters) actions += AsyncAction("Eat") {
+                            unit.decreaseHunger()
+                            unit.items.remove(firstItem)
+                            choices()
+                        }
+                        actions
+                    }
                 }
-                if ("Food" in firstItem.parameters) actions += Action("Eat") {
-                    unit.decreaseHunger()
-                    unit.items.remove(firstItem)
-                }
-                chooseAndActivateAction(actions, true)
-            }
-        }
-        chooseAndActivateAction(itemActions,true)
-        return RmBaseState()
     }
+
+    val huntAction = AsyncAction("Hunt") {
+        val enemy = listOf(MonsterGenerator.getHornRabbit(), MonsterGenerator.getWolf()).random()
+        displayText("You encounter a ${enemy.name}!")
+        RmBattleStateAsync(rmGameInfo, enemy).enterBattle()
+    }
+
+
+//    val talkAction = Action("Talk"){
+//        nextState=TalkState()
+//    }
+
 }
+
 
 class TalkState():State(){
     override fun nextState(rmGameInfo: RmGameInfo): State {

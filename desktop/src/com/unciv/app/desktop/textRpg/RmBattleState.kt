@@ -3,6 +3,34 @@ package com.unciv.app.desktop.textRpg
 import com.unciv.app.desktop.displayText
 
 
+class RmBattleStateAsync(rmGameInfo: RmGameInfo, enemy: Combatant) {
+    fun enterBattle(): List<AsyncAction> = listOf(AsyncAction("") {
+        enterBattle()
+    })
+
+    fun attack(attacker:Combatant,defender:Combatant, attack:Ability): Int {
+        val attackDamage = attack.calculateDamage(attacker) - defender.getArmor()
+        defender.health -= attackDamage
+        attacker.energy -= attack.getRequiredEnergy(attacker)
+        attack.experience += 10
+        if(attack.parameters.contains("LoseRequired")){
+            val itemsLost = arrayListOf<Item>()
+            for(requiredItem in attack.getRequiredItems()){
+                val matchingItems = attacker.items.filter { it.isEquipped && it.parameters.contains(requiredItem) }
+                if(matchingItems.size==1) itemsLost += matchingItems.first()
+                else TODO()
+            }
+            for(item in itemsLost){ // throw a spear, it's now in your enemy, and maybe he can use it
+                attacker.items -= item
+                defender.items += item
+            }
+        }
+        defender.status += attack.parameters.findParams("CauseStatus")
+        return attackDamage
+    }
+}
+
+
 class RmBattleState(val player: Combatant, val enemy: Combatant): State() {
     fun attack(attacker:Combatant,defender:Combatant, attack:Ability): Int {
         val attackDamage = attack.calculateDamage(attacker) - defender.getArmor()
